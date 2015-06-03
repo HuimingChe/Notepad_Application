@@ -50,9 +50,8 @@ public class NoteFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
 
-       /* UUID notesId = (UUID)getActivity().getIntent()
-                .getSerializableExtra(EXTRA_NOTES_ID);*/
         UUID notesId = (UUID) getArguments().getSerializable(EXTRA_NOTES_ID);
         mNote = NoteLab.get(getActivity()).getNote(notesId);
     }
@@ -78,6 +77,9 @@ public class NoteFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+       /* if (NavUtils.getParentActivityName(getActivity()) != null)
+            getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);*/
+
         View v = inflater.inflate(R.layout.fragment_note, container, false);
         mTitleField = (EditText) v.findViewById(R.id.note_title);
         mTitleField.setText(mNote.getTitle());
@@ -107,7 +109,7 @@ public class NoteFragment extends Fragment {
             public void onClick(View v) {
                 FragmentManager fm = getActivity().getFragmentManager();
                 DatePickerFragment dialog = DatePickerFragment.newInstance(mNote.getDate());
-                dialog.setTargetFragment(NoteFragment.this,REQUEST_DATE);
+                dialog.setTargetFragment(NoteFragment.this, REQUEST_DATE);
                 dialog.show(fm, DIALOG_DATE);
             }
         });
@@ -141,13 +143,42 @@ public class NoteFragment extends Fragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode != Activity.RESULT_OK) return;
-        if(requestCode == REQUEST_DATE){
-            Date date =(Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
+        if (requestCode == REQUEST_DATE) {
+            Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
             mNote.setDate(date);
             mDateButton.setText(mNote.getDate().toString());
         }
     }
 
+    /**
+     * This hook is called whenever an item in your options menu is selected.
+     * The default implementation simply returns false to have the normal
+     * processing happen (calling the item's Runnable or sending a message to
+     * its Handler as appropriate).  You can use this method for any items
+     * for which you would like to do processing without those other
+     * facilities.
+     * <p>
+     * <p>Derived classes should call through to the base class for it to
+     * perform the default menu handling.
+     *
+     * @param item The menu item that was selected.
+     * @return boolean Return false to allow normal menu processing to
+     * proceed, true to consume it here.
+     * @see #onCreateOptionsMenu
+     */
+   /* @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()){
+            case android.R.id.home:
+                if (NavUtils.getParentActivityName(getActivity())!=null){
+                    NavUtils.navigateUpFromSameTask(getActivity());
+                }
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+
+    }*/
     public static NoteFragment newInstance(UUID noteId) {
         Bundle args = new Bundle();
         args.putSerializable(EXTRA_NOTES_ID, noteId);

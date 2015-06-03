@@ -1,8 +1,12 @@
 package com.notepad.android.huiming.notepadapplication;
 
 import android.app.ListFragment;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -16,7 +20,9 @@ import java.util.ArrayList;
  * Created by huiming on 15-5-29.
  */
 public class NoteListFragment extends ListFragment {
+
     private ArrayList<Notes> mNoteList;
+
 
     /**
      * Called to do initial creation of a fragment.  This is called after
@@ -35,6 +41,7 @@ public class NoteListFragment extends ListFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
         getActivity().setTitle(R.string.notes_title);
         mNoteList = NoteLab.get(getActivity()).getNotelist();
 
@@ -77,6 +84,56 @@ public class NoteListFragment extends ListFragment {
     public void onResume() {
         super.onResume();
         ((NotesAdapter) getListAdapter()).notifyDataSetChanged();
+    }
+
+    /**
+     * Initialize the contents of the Activity's standard options menu.  You
+     * should place your menu items in to <var>menu</var>.  For this method
+     * to be called, you must have first called {@link #setHasOptionsMenu}.  See
+     * {@link Activity#onCreateOptionsMenu(Menu) Activity.onCreateOptionsMenu}
+     * for more information.
+     *
+     * @param menu     The options menu in which you place your items.
+     * @param inflater
+     * @see #setHasOptionsMenu
+     * @see #onPrepareOptionsMenu
+     * @see #onOptionsItemSelected
+     */
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        inflater.inflate(R.menu.fragment_notes_list,menu);
+    }
+
+    /**
+     * This hook is called whenever an item in your options menu is selected.
+     * The default implementation simply returns false to have the normal
+     * processing happen (calling the item's Runnable or sending a message to
+     * its Handler as appropriate).  You can use this method for any items
+     * for which you would like to do processing without those other
+     * facilities.
+     * <p/>
+     * <p>Derived classes should call through to the base class for it to
+     * perform the default menu handling.
+     *
+     * @param item The menu item that was selected.
+     * @return boolean Return false to allow normal menu processing to
+     * proceed, true to consume it here.
+     * @see #onCreateOptionsMenu
+     */
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_item_new_notes:
+                Notes notes = new Notes();
+                NoteLab.get(getActivity()).addNotes(notes);
+                Intent i = new Intent(getActivity(),NotesActivity.class);
+                i.putExtra(NoteFragment.EXTRA_NOTES_ID,notes.getId());
+                startActivityForResult(i,0);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     /**

@@ -1,11 +1,17 @@
 <resources>
     <string name="app_name">Notepad Application</string>
+    <string name="note_page_label">Notes</string>
 
     <string name="note_title_hint">添加一个记录</string>
     <string name="note_title_label">Title</string>
     <string name="note_details_label">Details</string>
     <string name="note_solved_label">Solved?</string>
-    <string name="notes_title">Notes</string>
+    <string name="notes_title">Notes List</string>
     <string name="date_picker_title">Date of notes</string>
+    <string name="new_notes">New Notes</string>
+    <string name="show_subtitle">Show Subtitle</string>
+    <string name="hide_subtitle">Hide Subtitle</string>
+    <string name="subtitle">If you see something, say something.</string>
+    <string name="delete_notes">Delete</string>
     <string name="action_settings">Settings</string>
 </resources>
