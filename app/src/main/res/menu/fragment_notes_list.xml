@@ -1,0 +1,8 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item android:id="@+id/menu_item_new_notes"
+        android:title="@string/new_notes"
+        android:icon="@mipmap/ic_menu_add"
+        app:showAsAction="ifRoom|withText" />
+</menu>
