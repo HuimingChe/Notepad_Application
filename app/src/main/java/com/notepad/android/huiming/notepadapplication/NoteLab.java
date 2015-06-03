@@ -15,21 +15,20 @@ public class NoteLab {
     private static final String TAG = "NotesLab";
     private static final String FILENAME = "notes.json";
     private static NoteLab sNotelab;
-    private  NotesIntentJSONSerializer mSerializer;
+    private NotesIntentJSONSerializer mSerializer;
     private Context mAppContext;
     private ArrayList<Notes> mNoteList;
 
     private NoteLab(Context appContext) {
         mAppContext = appContext;
-        mNoteList = new ArrayList<Notes>();
+        mSerializer = new NotesIntentJSONSerializer(mAppContext, FILENAME);
 
-//        测试代码
-  /*      for (int i = 0; i < 10; i++) {
-            Notes c = new Notes();
-            c.setTitle("Note#" + i);
-            c.setSolved(i % 2 == 0);
-            mNoteList.add(c);
-        }*/
+        try {
+            mNoteList = mSerializer.loadNotes();
+        } catch (Exception e) {
+            mNoteList = new ArrayList<Notes>();
+            Log.e(TAG, "Error loading notes: ", e);
+        }
     }
 
     //      获取单例对象
@@ -52,18 +51,25 @@ public class NoteLab {
         return null;
     }
 
-    public void addNotes(Notes c){
+    public void addNotes(Notes c) {
         mNoteList.add(c);
     }
 
-    public boolean saveNotesLab(){
+    public boolean saveNotesLab() {
         try {
             mSerializer.saveNotes(mNoteList);
-            Log.d(TAG,"notes saved to file");
+            Log.d(TAG, "notes saved to file");
             return true;
-        }catch (Exception e){
-            Log.e(TAG,"Error saving notes: ", e);
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving notes: ", e);
             return false;
         }
+    }
+
+    /**
+     * @param c
+     */
+    public void deleteNotes(Notes c) {
+        mNoteList.remove(c);
     }
 }

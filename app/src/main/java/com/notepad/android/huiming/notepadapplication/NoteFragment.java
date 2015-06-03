@@ -151,6 +151,17 @@ public class NoteFragment extends Fragment {
     }
 
     /**
+     * Called when the Fragment is no longer resumed.  This is generally
+     * tied to {@link Activity#onPause() Activity.onPause} of the containing
+     * Activity's lifecycle.
+     */
+    @Override
+    public void onPause() {
+        super.onPause();
+        NoteLab.get(getActivity()).saveNotesLab();
+    }
+
+    /**
      * This hook is called whenever an item in your options menu is selected.
      * The default implementation simply returns false to have the normal
      * processing happen (calling the item's Runnable or sending a message to

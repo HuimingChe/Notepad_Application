@@ -26,6 +26,21 @@ public class Notes {
 
     }
 
+    /**
+     * 构建带JSONObject参数的Notes构造方法，
+     * 用于启动应用时从文件中读取JSON数据
+     *
+     * @param json
+     * @throws JSONException
+     */
+
+    public Notes(JSONObject json) throws JSONException {
+        mId = UUID.fromString(json.getString(JSON_ID));
+        mTitle = json.getString(JSON_TITLE);
+        mSolved = json.getBoolean(JSON_SOLVED);
+        mDate = new Date(json.getLong(JSON_DATE));
+    }
+
     public UUID getId() {
         return mId;
     }
@@ -60,12 +75,18 @@ public class Notes {
         return mTitle;
     }
 
+    /**
+     * 用于将Notes数据打包成JSON数据格式。
+     *
+     * @return JSONObject
+     * @throws JSONException
+     */
     public JSONObject toJSON() throws JSONException {
-        JSONObject josn = new JSONObject();
-        josn.put(JSON_ID, mId.toString());
-        josn.put(JSON_TITLE, mTitle);
-        josn.put(JSON_SOLVED, mSolved);
-        josn.put(JSON_DATE, mDate.toString());
-        return josn;
+        JSONObject json = new JSONObject();
+        json.put(JSON_ID, mId.toString());
+        json.put(JSON_TITLE, mTitle);
+        json.put(JSON_SOLVED, mSolved);
+        json.put(JSON_DATE, mDate.getTime());
+        return json;
     }
 }

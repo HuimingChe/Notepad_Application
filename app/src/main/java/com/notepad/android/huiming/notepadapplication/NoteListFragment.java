@@ -3,12 +3,18 @@ package com.notepad.android.huiming.notepadapplication;
 import android.app.ListFragment;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.ActionMode;
+import android.view.ContextMenu;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.ListView;
@@ -52,6 +58,80 @@ public class NoteListFragment extends ListFragment {
                         mNoteList);*/
         NotesAdapter adapter = new NotesAdapter(mNoteList);
         setListAdapter(adapter);
+    }
+
+    /**
+     * Provide default implementation to return a simple list view.  Subclasses
+     * can override to replace with their own layout.  If doing so, the
+     * returned view hierarchy <em>must</em> have a ListView whose id
+     * is {@link android.R.id#list android.R.id.list} and can optionally
+     * have a sibling view id {@link android.R.id#empty android.R.id.empty}
+     * that is to be shown when the list is empty.
+     * <p/>
+     * <p>If you are overriding this method with your own custom content,
+     * consider including the standard layout {@link android.R.layout#list_content}
+     * in your layout file, so that you continue to retain all of the standard
+     * behavior of ListFragment.  In particular, this is currently the only
+     * way to have the built-in indeterminant progress state be shown.
+     *
+     * @param inflater
+     * @param container
+     * @param savedInstanceState
+     */
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View v = super.onCreateView(inflater, container, savedInstanceState);
+        ListView listView = (ListView) v.findViewById(android.R.id.list);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+            registerForContextMenu(listView);
+        } else {
+            listView.setChoiceMode(listView.CHOICE_MODE_MULTIPLE_MODAL);
+            listView.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
+                @Override
+                public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
+
+                }
+
+                @Override
+                public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                    MenuInflater inflater = mode.getMenuInflater();
+                    inflater.inflate(R.menu.notes_list_item_context, menu);
+                    return true;
+                }
+
+                @Override
+                public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                    return false;
+                }
+
+                @Override
+                public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                    switch (item.getItemId()) {
+                        case R.id.menu_item_delete_notes:
+                            NotesAdapter adapter = (NotesAdapter) getListAdapter();
+                            NoteLab notelab = NoteLab.get(getActivity());
+                            for (int i = adapter.getCount() - 1; i >= 0; i--) {
+                                if (getListView().isItemChecked(i)) {
+                                    notelab.deleteNotes(adapter.getItem(i));
+                                }
+                            }
+                            mode.finish();
+                            adapter.notifyDataSetChanged();
+                            NoteLab.get(getActivity()).saveNotesLab();
+                            return true;
+                        default:
+                            return false;
+                    }
+
+                }
+
+                @Override
+                public void onDestroyActionMode(ActionMode mode) {
+
+                }
+            });
+        }
+        return v;
     }
 
     /**
@@ -102,7 +182,7 @@ public class NoteListFragment extends ListFragment {
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
-        inflater.inflate(R.menu.fragment_notes_list,menu);
+        inflater.inflate(R.menu.fragment_notes_list, menu);
     }
 
     /**
@@ -127,13 +207,74 @@ public class NoteListFragment extends ListFragment {
             case R.id.menu_item_new_notes:
                 Notes notes = new Notes();
                 NoteLab.get(getActivity()).addNotes(notes);
-                Intent i = new Intent(getActivity(),NotesActivity.class);
-                i.putExtra(NoteFragment.EXTRA_NOTES_ID,notes.getId());
-                startActivityForResult(i,0);
+                Intent i = new Intent(getActivity(), NotesActivity.class);
+                i.putExtra(NoteFragment.EXTRA_NOTES_ID, notes.getId());
+                startActivityForResult(i, 0);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    /**
+     * Called when a context menu for the {@code view} is about to be shown.
+     * Unlike {@link #onCreateOptionsMenu}, this will be called every
+     * time the context menu is about to be shown and should be populated for
+     * the view (or item inside the view for {@link AdapterView} subclasses,
+     * this can be found in the {@code menuInfo})).
+     * <p/>
+     * Use {@link #onContextItemSelected(MenuItem)} to know when an
+     * item has been selected.
+     * <p/>
+     * The default implementation calls up to
+     * {@link Activity#onCreateContextMenu Activity.onCreateContextMenu}, though
+     * you can not call this implementation if you don't want that behavior.
+     * <p/>
+     * It is not safe to hold onto the context menu after this method returns.
+     * {@inheritDoc}
+     *
+     * @param menu
+     * @param v
+     * @param menuInfo
+     */
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        getActivity().getMenuInflater().inflate(R.menu.notes_list_item_context, menu);
+    }
+
+    /**
+     * This hook is called whenever an item in a context menu is selected. The
+     * default implementation simply returns false to have the normal processing
+     * happen (calling the item's Runnable or sending a message to its Handler
+     * as appropriate). You can use this method for any items for which you
+     * would like to do processing without those other facilities.
+     * <p/>
+     * Use {@link MenuItem#getMenuInfo()} to get extra information set by the
+     * View that added this menu item.
+     * <p/>
+     * Derived classes should call through to the base class for it to perform
+     * the default menu handling.
+     *
+     * @param item The context menu item that was selected.
+     * @return boolean Return false to allow normal context menu processing to
+     * proceed, true to consume it here.
+     */
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        AdapterView.AdapterContextMenuInfo info =
+                (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+        int postiton = info.position;
+        NotesAdapter adapter = (NotesAdapter) getListAdapter();
+        Notes notes = adapter.getItem(postiton);
+
+        switch (item.getItemId()) {
+            case R.id.menu_item_delete_notes:
+                NoteLab.get(getActivity()).deleteNotes(notes);
+                NoteLab.get(getActivity()).saveNotesLab();
+                adapter.notifyDataSetChanged();
+                return true;
+        }
+        return super.onContextItemSelected(item);
     }
 
     /**
