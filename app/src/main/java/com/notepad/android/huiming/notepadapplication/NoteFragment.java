@@ -4,10 +4,14 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.drawable.BitmapDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +19,8 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 
 import java.util.Date;
 import java.util.UUID;
@@ -26,18 +32,25 @@ public class NoteFragment extends Fragment {
     public static final String EXTRA_NOTES_ID =
             "com.notepad.android.huiming.notepadapplication.noteid";
     private static final String DIALOG_DATE = "date";
+    private static final String TAG = "NoteFragment";
+    private static final String DIALOG_IMAGE = "image";
+
     private static final int REQUEST_DATE = 0;
+    private static final int REQUEST_PHOTO = 1;
 
     private Notes mNote;
     private EditText mTitleField;
     private Button mDateButton;
     private CheckBox mSolvedCheckBox;
+    private ImageButton mPhotoButton;
+    private ImageView mPhotoView;
+
 
     /**
      * Called to do initial creation of a fragment.  This is called after
      * {@link #onAttach(Activity)} and before
      * {@link #onCreateView(LayoutInflater, ViewGroup, Bundle)}.
-     * <p>
+     * <p/>
      * <p>Note that this can be called while the fragment's activity is
      * still in the process of being created.  As such, you can not rely
      * on things like the activity's content view hierarchy being initialized
@@ -61,7 +74,7 @@ public class NoteFragment extends Fragment {
      * This is optional, and non-graphical fragments can return null (which
      * is the default implementation).  This will be called between
      * {@link #onCreate(Bundle)} and {@link #onActivityCreated(Bundle)}.
-     * <p>
+     * <p/>
      * <p>If you return a View from here, you will later be called in
      * {@link #onDestroyView} when the view is being released.
      *
@@ -77,7 +90,7 @@ public class NoteFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-       /* if (NavUtils.getParentActivityName(getActivity()) != null)
+        /*if (NavUtils.getParentActivityName(getActivity()) != null)
             getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);*/
 
         View v = inflater.inflate(R.layout.fragment_note, container, false);
@@ -123,6 +136,39 @@ public class NoteFragment extends Fragment {
             }
         });
 
+        mPhotoButton = (ImageButton) v.findViewById(R.id.camera_imageButton);
+        mPhotoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(getActivity(), NotesCameraActivity.class);
+                startActivityForResult(i, REQUEST_PHOTO);
+            }
+        });
+
+        PackageManager packageManager = getActivity().getPackageManager();
+        boolean hasACamera = packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA) ||
+                packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT) ||
+                Build.VERSION.SDK_INT < Build.VERSION_CODES.GINGERBREAD ||
+                android.hardware.Camera.getNumberOfCameras() > 0;
+        if (!hasACamera) {
+            mPhotoButton.setEnabled(false);
+        }
+
+        mPhotoView = (ImageView) v.findViewById(R.id.notes_imageView);
+        mPhotoView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Photo photo = mNote.getPhoto();
+                if (photo == null){
+                    return;
+                }
+                FragmentManager fm = getActivity().getFragmentManager();
+                String path = getActivity().getFileStreamPath(photo.getFilename())
+                        .getAbsolutePath();
+                ImageFragment.newInstance(path).show(fm,DIALOG_IMAGE);
+            }
+        });
+
         return v;
 
     }
@@ -147,7 +193,39 @@ public class NoteFragment extends Fragment {
             Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
             mNote.setDate(date);
             mDateButton.setText(mNote.getDate().toString());
+        } else if (requestCode == REQUEST_PHOTO) {
+            String filename = data.getStringExtra(NoteCameraFragment.EXTRA_PHOTO_FILENAME);
+            if (filename != null) {
+                Photo photo = new Photo(filename);
+                mNote.setPhoto(photo);
+                showPhoto();
+                Log.i(TAG, "Notes: " + mNote.getTitle() + "has a photo :" + filename);
+            }
         }
+
+    }
+
+    /**
+     * Called when the Fragment is visible to the user.  This is generally
+     * tied to {@link Activity#onStart() Activity.onStart} of the containing
+     * Activity's lifecycle.
+     */
+    @Override
+    public void onStart() {
+        super.onStart();
+        showPhoto();
+    }
+
+    /**
+     * Called when the Fragment is no longer started.  This is generally
+     * tied to {@link Activity#onStop() Activity.onStop} of the containing
+     * Activity's lifecycle.
+     */
+    @Override
+    public void onStop() {
+        super.onStop();
+        PictureUtils.cleanImageView(mPhotoView);
+
     }
 
     /**
@@ -168,7 +246,7 @@ public class NoteFragment extends Fragment {
      * its Handler as appropriate).  You can use this method for any items
      * for which you would like to do processing without those other
      * facilities.
-     * <p>
+     * <p/>
      * <p>Derived classes should call through to the base class for it to
      * perform the default menu handling.
      *
@@ -190,6 +268,17 @@ public class NoteFragment extends Fragment {
         }
 
     }*/
+    private void showPhoto() {
+        Photo photo = mNote.getPhoto();
+        BitmapDrawable bitmapDrawable = null;
+        if (photo != null){
+            String path =getActivity()
+                    .getFileStreamPath(photo.getFilename()).getAbsolutePath();
+            bitmapDrawable = PictureUtils.getScaledDrawable(getActivity(),path);
+        }
+        mPhotoView.setImageDrawable(bitmapDrawable);
+    }
+
     public static NoteFragment newInstance(UUID noteId) {
         Bundle args = new Bundle();
         args.putSerializable(EXTRA_NOTES_ID, noteId);

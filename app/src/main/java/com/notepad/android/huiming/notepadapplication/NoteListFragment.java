@@ -1,7 +1,6 @@
 package com.notepad.android.huiming.notepadapplication;
 
 import android.app.ListFragment;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;

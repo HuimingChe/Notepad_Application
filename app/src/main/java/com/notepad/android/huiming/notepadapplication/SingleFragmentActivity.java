@@ -4,13 +4,12 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
 
 /**
  * Created by huiming on 15-5-29.
  * 配置activity托管fragment的通用代码
  */
-public abstract class SingleFragmentActivity extends ActionBarActivity {
+public abstract class SingleFragmentActivity extends Activity {
     protected abstract Fragment createFragment();
 
     /**

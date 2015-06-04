@@ -14,10 +14,26 @@
             android:layout_weight="1"
             android:id="@+id/notes_camera_surfaceView" />
 
-        <Button
+        <ImageButton
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:text="@string/take"
+            android:src="@android:drawable/btn_radio"
             android:id="@+id/notes_camera_takePictureButton" />
+
     </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/note_camera_progressContainer"
+        android:clickable="true">
+
+        <ProgressBar
+            style="@android:style/Widget.ProgressBar.Large"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/progressBar"
+            android:layout_gravity="center"/>
+    </FrameLayout>
+
 </FrameLayout>

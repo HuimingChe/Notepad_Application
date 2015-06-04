@@ -1,7 +1,11 @@
 package com.notepad.android.huiming.notepadapplication;
 
+import android.app.Activity;
 import android.app.Fragment;
+import android.content.Context;
+import android.content.Intent;
 import android.hardware.Camera;
+import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -10,10 +14,13 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ImageButton;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Created by huiming on 15-6-3.
@@ -21,9 +28,54 @@ import java.util.List;
 @SuppressWarnings("deprecation")
 public class NoteCameraFragment extends Fragment {
     private static final String TAG = "NoteCameraFragment";
+    public static final String EXTRA_PHOTO_FILENAME =
+            "com.notepad.android.huiming.notepadapplication.photo_filename";
 
     private Camera mCamera;
     private SurfaceView mSurfaceView;
+    private View mProgressContainer;
+
+    private Camera.ShutterCallback mShutterCallback = new Camera.ShutterCallback() {
+        @Override
+        public void onShutter() {
+            mProgressContainer.setVisibility(View.VISIBLE);
+            Log.i(TAG, "get picture");
+        }
+    };
+
+    private Camera.PictureCallback mJpegCallback = new Camera.PictureCallback() {
+        @Override
+        public void onPictureTaken(byte[] data, Camera camera) {
+            String filename = UUID.randomUUID().toString() + ".jpg";
+            FileOutputStream os = null;
+            boolean success = true;
+            try {
+                os = getActivity().openFileOutput(filename, Context.MODE_PRIVATE);
+                os.write(data);
+            } catch (Exception e) {
+                Log.e(TAG, "Error writing to  file " + filename, e);
+                success = false;
+            } finally {
+                try {
+                    if (os != null)
+                        os.close();
+                } catch (Exception e) {
+                    Log.e(TAG, "Error closing file " + filename, e);
+                    success = false;
+                }
+            }
+            if (success) {
+                Log.i(TAG, "JPEG saved at " + filename);
+                Intent i = new Intent();
+                i.putExtra(EXTRA_PHOTO_FILENAME, filename);
+                getActivity().setResult(Activity.RESULT_OK, i);
+            } else {
+                getActivity().setResult(Activity.RESULT_CANCELED);
+                Log.i(TAG, "JPEG saved false.");
+            }
+            getActivity().finish();
+        }
+    };
 
     /**
      * Called to have the fragment instantiate its user interface view.
@@ -49,14 +101,6 @@ public class NoteCameraFragment extends Fragment {
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_notes_camera, container, false);
 
-        Button takePictureButton = (Button) v.findViewById(R.id.notes_camera_takePictureButton);
-        takePictureButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                getActivity().finish();
-            }
-        });
-
         mSurfaceView = (SurfaceView) v.findViewById(R.id.notes_camera_surfaceView);
 
         SurfaceHolder holder = mSurfaceView.getHolder();
@@ -78,8 +122,12 @@ public class NoteCameraFragment extends Fragment {
                     return;
 
                 Camera.Parameters parameters = mCamera.getParameters();
-                Camera.Size s = getBestSupportedSize(parameters.getSupportedPreviewSizes(), width, height);
+                Size s = getBestSupportedSize(parameters.getSupportedPreviewSizes(), width, height);
                 parameters.setPreviewSize(s.width, s.height);
+
+                Size s2 = getBestSupportedSize(parameters.getSupportedPictureSizes(), width, height);
+                parameters.setPictureSize(s2.width, s2.height);
+
                 mCamera.setParameters(parameters);
                 try {
                     mCamera.startPreview();
@@ -94,6 +142,20 @@ public class NoteCameraFragment extends Fragment {
             public void surfaceDestroyed(SurfaceHolder holder) {
                 if (mCamera != null)
                     mCamera.stopPreview();
+            }
+        });
+
+        mProgressContainer = v.findViewById(R.id.note_camera_progressContainer);
+        mProgressContainer.setVisibility(View.INVISIBLE);
+
+        ImageButton takePictureButton =
+                (ImageButton) v.findViewById(R.id.notes_camera_takePictureButton);
+        takePictureButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mCamera != null) {
+                    mCamera.takePicture(mShutterCallback, null, mJpegCallback);
+                }
             }
         });
 
@@ -126,14 +188,17 @@ public class NoteCameraFragment extends Fragment {
         }
     }
 
-    private Camera.Size getBestSupportedSize(List<Camera.Size> sizes, int width, int height) {
-        Camera.Size bestSize = sizes.get(0);
+    private Size getBestSupportedSize(List<Size> sizes, int width, int height) {
+        Size bestSize = sizes.get(0);
         int largestArea = bestSize.width * bestSize.height;
-        for (Camera.Size s : sizes) {
+        int surfaceArea = width * height;
+        for (Size s : sizes) {
             int area = s.width * s.height;
             if (area > largestArea) {
-                bestSize = s;
-                largestArea = area;
+                if (Math.abs(area - surfaceArea) < Math.abs(largestArea - surfaceArea)) {
+                    bestSize = s;
+                    largestArea = area;
+                }
             }
         }
         return bestSize;
